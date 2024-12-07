@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+    <!-- Breadcrumb Start -->
+    <div class="container-fluid">
+        <div class="row px-xl-5">
+            <div class="col-12">
+                <nav class="breadcrumb bg-light mb-30">
+                    <a class="breadcrumb-item text-dark" href="{% url 'index' %}">Home</a>
+                    <span class="breadcrumb-item active">Checkout</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <!-- Breadcrumb End -->
+
+
+    <!-- Checkout Start -->
+    <div class="container-fluid">
+        <div class="row px-xl-5">
+            {% if request.user.is_anonymous %}
+                <p class="d-flex mx-auto" style="font-size: larger;">You need to <a href="{% url 'login' %}?next={% url 'checkout' %}" class="text-danger mx-1">login</a> to Checkout.</p>
+            {% else %}
+                {% if cart_items %}
+                <div class="col-lg-8">
+                    <h5 class="section-title position-relative text-uppercase mb-3"><span class="bg-secondary pr-3">Billing Address</span></h5>
+                    <div class="bg-light p-30 mb-5 shipping">
+                        <form method="POST" id="form">
+                            {% csrf_token %}
+                            {% if form_shipping.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form_shipping.errors }}
+                                </div>
+                            {% endif %}
+                                    <fieldset class="row user_info ">
+                                        <div class="col-md-6 form-group">
+                                            <label>Name</label>
+                                            {{form_shipping.name.as_widget}}
+                                        </div>
+                                    
+                                        <div class="col-md-6 form-group">
+                                            <label>E-mail</label>
+                                            {{form_shipping.email.as_widget}}
+                                        </div>
+                                    </fieldset>
+                                    <fieldset class="row shipping_info">
+                                        <div class="col-md-6 form-group">
+                                            <label>Mobile No</label>
+                                            {{form_shipping.mobile.as_widget}}
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label>Address</label>
+                                            {{form_shipping.address.as_widget}}
+                                        </div>
+                                    
+                                        <div class="col-md-6 form-group">
+                                            <label>Country</label>
+                                            {{form_shipping.country.as_widget}}
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label>City</label>
+                                            {{form_shipping.city.as_widget}}
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label>State</label>
+                                            {{form_shipping.state.as_widget}}
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label>ZIP Code</label>
+                                            {{form_shipping.zip_code.as_widget}}
+                                        </div>
+                                    </fieldset>
+                                <button class="btn btn-primary w-100 p-3 mx-auto font-weight-bold submit" type="submit">Continue</button>
+                        </form>
+                    </div>
+                    
+                    <div class="mb-5 payment hidden">
+                        <h5 class="section-title position-relative text-uppercase mb-3"><span class="bg-secondary pr-3">Payment</span></h5>
+                            <div class="paypal_btn" style="width: 100%; height:400px%">
+                            </div>
+                        <script src="https://www.paypal.com/sdk/js?client-id=AekuCz-cEoqTDDcNpolz7ZK0Y0LXGna2PG0e6vX22qKBD1EkyL8fmLrKioWm8omkFnfBOXggwQJGZYxG"></script>
+                        <script>
+                            // تأكد من استبدال YOUR_CLIENT_ID بمعرف العميل الخاص بك
+                            paypal.Buttons({
+                                createOrder: function(data, actions) {
+                                    return actions.order.create({
+                                        purchase_units: [{
+                                            amount: {
+                                                value: "{{cart.Final_total|floatformat:'2'}}" // هنا اجعل المبلغ الذي سيتم دفعه
+                                            }
+                                        }]
+                                    });
+                                },
+                                onApprove: function(data, actions) {
+                                    return actions.order.capture().then(function(details) {
+                                        // استدعاء دالة submitDataForm بعد اكتمال الدفع
+                                        submitDataForm();
+                                    });
+                                },
+                                onError: function(err) {
+                                    console.error('PayPal Checkout onError', err);
+                                }
+                            }).render('.paypal_btn'); // تأكد من أن هذا هو العنصر الصحيح حيث تريد عرض زر بايبال
+                        </script>
+
+                    </div>
+
+                </div>
+                <div class="col-lg-4">
+                    <h5 class="section-title position-relative text-uppercase mb-3"><span class="bg-secondary pr-3">Order Total</span></h5>
+                    <div class="bg-light p-30 mb-5">
+                        <div class="border-bottom">
+                            <h6 class="mb-3">Products</h6>
+                            {% for item in cart_items %}
+                            <div class="d-flex justify-content-between">
+                                <p>{{item.product.title}} ×({{item.quantity}})</p>
+                                <p>${{item.get_total|floatformat:'2'}} </p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="border-bottom pt-3 pb-2">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h6>Subtotal</h6>
+                                <h6>${{cart.get_total_price|floatformat:'2'}}</h6>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <h6 class="font-weight-medium">Shipping</h6>
+                                <h6 class="font-weight-medium">${{cart.get_total_shipping|floatformat:'2'}}</h6>
+                            </div>
+                        </div>
+                        <div class="pt-2">
+                            <div class="d-flex justify-content-between mt-2">
+                                <h5>Total</h5>
+                                <h5>${{cart.Final_total|floatformat:'2'}}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="d-flex mx-auto" style="font-size: larger;">Your cart is empty.</p>
+                {% endif %}
+            {% endif %}
+
+        </div>
+    </div>
+    <!-- Checkout End -->
+
+
+<script type="text/javascript">
+shipping = '{{cart.shipping}}'
+final_total = "{{cart.Final_total|floatformat:'2'}}"
+if (shipping == 'False'){
+    document.querySelector('.shipping_info').innerHTML = ''
+};
+    let form =  document.querySelector('#form')
+    let payment =  document.querySelector('.payment')
+    form.addEventListener('submit', function(e){
+        e.preventDefault()
+        form.classList.add('hidden') 
+        payment.classList.remove('hidden') 
+    })
+
+    
+    function submitDataForm(){
+        userInfo = {
+            'name' : form.name.value,
+            'email':form.email.value ,
+            'final_total': final_total,
+        }
+        shippingInfo = {
+            'mobile' : null,
+            'address' : null,
+            'country' : null,
+            'city': null,
+            'state': null,
+            'zipcode': null,
+        }
+
+        if (shipping != 'False'){
+            shippingInfo.mobile = form.mobile.value
+            shippingInfo.address = form.address.value
+            shippingInfo.country = form.country.value
+            shippingInfo.city = form.city.value
+            shippingInfo.state = form.state.value
+            shippingInfo.zipcode = form.zipcode.value
+        }
+        fetch('/payment_success/', {
+            method: 'POST',
+            headers: {     
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({'shippingInfo': shippingInfo, 'userInfo': userInfo})
+        })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            console.log ('data', data)
+            alert('Transation Completed')
+            window.location.href = "{% url 'index' %}"
+        })
+    }
+</script>
+{% endblock content %}
